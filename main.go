@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/histolabs/metro/app"
 	"github.com/histolabs/metro/app/encoding"
@@ -18,12 +20,44 @@ import (
 	"github.com/histolabs/metro/testutil/testfactory"
 )
 
-func main() {
-	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+const (
+	appName        = "metro"
+	keyringBackend = "test"
+	keyringRootDir = "~/.metro"
+	keyName        = "validator"
+	chainID        = "private"
+	grpcEndpoint   = "127.0.0.1:9090"
+)
 
+func newSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, secondaryChainID string) (*builder.KeyringSigner, sdk.AccAddress, error) {
+	chainID := chainID
+	if secondaryChainID != "" {
+		chainID = strings.Join([]string{chainID, secondaryChainID}, consts.ChainIDSeparator)
+	}
+
+	signer := builder.NewKeyringSigner(ecfg, kr, keyName, chainID)
+	err := signer.UpdateAccount(context.Background(), conn)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	info, err := signer.Key(keyName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fromAddr, err := info.GetAddress()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return signer, fromAddr, nil
+}
+
+func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn *grpc.ClientConn, isSecondary bool) error {
 	feeCoin := sdk.Coin{
 		Denom:  consts.BondDenom,
-		Amount: sdk.NewInt(210),
+		Amount: sdk.NewInt(1000000),
 	}
 
 	opts := []builder.TxBuilderOption{
@@ -31,16 +65,52 @@ func main() {
 		builder.SetGasLimit(1000000000),
 	}
 
+	txBuilder := signer.NewTxBuilder(opts...)
+	msg := banktypes.NewMsgSend(fromAddr, testfactory.RandomAddress().(types.AccAddress), types.NewCoins(types.NewInt64Coin(consts.BondDenom, 1)))
+	tx, err := signer.BuildSignedTx(txBuilder, isSecondary, msg)
+	if err != nil {
+		return err
+	}
+
+	txBytes, err := signer.EncodeTx(tx)
+	if err != nil {
+		return err
+	}
+
+	txClient := txtypes.NewServiceClient(conn)
+	grpcRes, err := txClient.BroadcastTx(
+		context.Background(),
+		&txtypes.BroadcastTxRequest{
+			Mode:    txtypes.BroadcastMode_BROADCAST_MODE_SYNC,
+			TxBytes: txBytes,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("exit code:", grpcRes.TxResponse.Code)
+	if grpcRes.TxResponse.Code == 0 {
+		fmt.Println("tx submitted successfully 🤨")
+		return nil
+	}
+
+	return fmt.Errorf("tx submission failed: response: %s", grpcRes.TxResponse)
+}
+
+func main() {
+	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+
 	config := types.GetConfig()
 	config.SetBech32PrefixForAccount(app.Bech32PrefixAccAddr, app.Bech32PrefixAccPub)
 
-	kr, err := keyring.New("metro", "test", "/home/e/.metro", bytes.NewBuffer([]byte{}), ecfg.Codec)
+	kr, err := keyring.New(appName, keyringBackend, keyringRootDir, bytes.NewBuffer([]byte{}), ecfg.Codec)
 	if err != nil {
 		panic(err)
 	}
 
 	grpcConn, err := grpc.Dial(
-		"127.0.0.1:9090",
+		grpcEndpoint,
 		grpc.WithInsecure(),
 	)
 	if err != nil {
@@ -48,35 +118,21 @@ func main() {
 	}
 	defer grpcConn.Close()
 
-	signer := builder.NewKeyringSigner(ecfg, kr, "validator", "private")
-	err = signer.UpdateAccount(context.Background(), grpcConn)
-	if err != nil {
-		panic(err)
+	secondaryChainIDs := []string{
+		"",    // primary
+		"aaa", // secondary
+		"bbb", // secondary
 	}
 
-	txBuilder := signer.NewTxBuilder(opts...)
+	for _, id := range secondaryChainIDs {
+		signer, fromAddr, err := newSigner(ecfg, kr, grpcConn, id)
+		if err != nil {
+			panic(err)
+		}
 
-	info, err := signer.Key("validator")
-	if err != nil {
-		panic(err)
+		err = buildAndSendTx(signer, fromAddr, grpcConn, id != "")
+		if err != nil {
+			panic(err)
+		}
 	}
-
-	fromAddr, err := info.GetAddress()
-	if err != nil {
-		panic(err)
-	}
-
-	msg := banktypes.NewMsgSend(fromAddr, testfactory.RandomAddress().(types.AccAddress), types.NewCoins(types.NewInt64Coin(consts.BondDenom, 12)))
-	tx, err := signer.BuildSignedTx(txBuilder, false, msg)
-	if err != nil {
-		panic(err)
-	}
-
-	txBytes, err := signer.EncodeTx(tx)
-	if err != nil {
-		panic(err)
-	}
-
-	_ = txBytes
-	fmt.Println("code ran successfully 🤨")
 }
