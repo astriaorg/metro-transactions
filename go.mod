@@ -5,6 +5,7 @@ go 1.19
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/histolabs/cosmos-sdk v0.0.0-20221230021044-779df3c9a0f5
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	github.com/histolabs/metro => ../../../../../metro
 	github.com/tendermint/tendermint => github.com/histolabs/tendermint v0.0.0-20221227204023-ec49dd7d580f
 )
 

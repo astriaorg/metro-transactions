@@ -328,8 +328,6 @@ github.com/hdevalence/ed25519consensus v0.0.0-20220222234857-c00d1f31bab3 h1:aSV
 github.com/hdevalence/ed25519consensus v0.0.0-20220222234857-c00d1f31bab3/go.mod h1:5PC6ZNPde8bBqU/ewGZig35+UIZtw9Ytxez8/q5ZyFE=
 github.com/histolabs/cosmos-sdk v0.0.0-20221230021044-779df3c9a0f5 h1:bKd7CsMg4dFkqQ9CQq/vMRlcPEpo1wPJZOsS114PtNA=
 github.com/histolabs/cosmos-sdk v0.0.0-20221230021044-779df3c9a0f5/go.mod h1:2Oq+pYLgUOdcv++AXR77Nv/Yiw4dckswSQN1iyScUqk=
-github.com/histolabs/metro v0.0.0-20221231210435-3dbdd87e599d h1:Ru3lyZ8T2RNZiCXq8LGh0bwZy9lHQ4IQMKcBKndyHsQ=
-github.com/histolabs/metro v0.0.0-20221231210435-3dbdd87e599d/go.mod h1:t4AHAT/U7wTw3s3xABFlU0EINUWbtfY0nDnCbNiv3nE=
 github.com/histolabs/tendermint v0.0.0-20221227204023-ec49dd7d580f h1:kKbennoGXeAoinjF9jrcYF7bSJpjw14UGQEqe4TXexQ=
 github.com/histolabs/tendermint v0.0.0-20221227204023-ec49dd7d580f/go.mod h1:S0QMQWprpLDnBooMFbQYEVUGzZJaLMwOvtG7tbWoAiY=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=

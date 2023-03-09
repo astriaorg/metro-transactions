@@ -15,6 +15,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/histolabs/metro/app"
 	"github.com/histolabs/metro/app/encoding"
+	metrotx "github.com/histolabs/metro/pb"
 	"github.com/histolabs/metro/pkg/builder"
 	"github.com/histolabs/metro/pkg/consts"
 	"github.com/histolabs/metro/testutil/testfactory"
@@ -54,7 +55,7 @@ func newSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, 
 	return signer, fromAddr, nil
 }
 
-func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn *grpc.ClientConn, isSecondary bool) error {
+func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn *grpc.ClientConn, isSecondary bool, secondaryChainID string) error {
 	feeCoin := sdk.Coin{
 		Denom:  consts.BondDenom,
 		Amount: sdk.NewInt(1000000),
@@ -66,7 +67,14 @@ func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn
 	}
 
 	txBuilder := signer.NewTxBuilder(opts...)
-	msg := banktypes.NewMsgSend(fromAddr, testfactory.RandomAddress().(types.AccAddress), types.NewCoins(types.NewInt64Coin(consts.BondDenom, 1)))
+
+	var msg sdk.Msg
+	if isSecondary {
+		msg = metrotx.NewSequencerTx([]byte(secondaryChainID), []byte("hello"), fromAddr)
+	} else {
+		msg = banktypes.NewMsgSend(fromAddr, testfactory.RandomAddress().(types.AccAddress), types.NewCoins(types.NewInt64Coin(consts.BondDenom, 1)))
+	}
+
 	tx, err := signer.BuildSignedTx(txBuilder, isSecondary, msg)
 	if err != nil {
 		return err
@@ -130,7 +138,7 @@ func main() {
 			panic(err)
 		}
 
-		err = buildAndSendTx(signer, fromAddr, grpcConn, id != "")
+		err = buildAndSendTx(signer, fromAddr, grpcConn, id != "", id)
 		if err != nil {
 			panic(err)
 		}
