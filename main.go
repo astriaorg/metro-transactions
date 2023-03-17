@@ -70,7 +70,7 @@ func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn
 
 	var msg sdk.Msg
 	if isSecondary {
-		msg = metrotx.NewSequencerTx([]byte(secondaryChainID), []byte("hello"), fromAddr)
+		msg = metrotx.NewSequencerMsg([]byte(secondaryChainID), []byte("hello"), fromAddr)
 	} else {
 		msg = banktypes.NewMsgSend(fromAddr, testfactory.RandomAddress().(types.AccAddress), types.NewCoins(types.NewInt64Coin(consts.BondDenom, 1)))
 	}
