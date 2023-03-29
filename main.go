@@ -27,8 +27,42 @@ const (
 	keyringRootDir = "~/.metro"
 	keyName        = "validator"
 	chainID        = "private"
-	grpcEndpoint   = "127.0.0.1:9090"
+
+	DefaultGRPCEndpoint = "127.0.0.1:9090"
 )
+
+func BuildAndSendSecondaryTransaction(grpcEndpoint, secondaryChainID string, tx []byte) error {
+	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+
+	config := types.GetConfig()
+	config.SetBech32PrefixForAccount(app.Bech32PrefixAccAddr, app.Bech32PrefixAccPub)
+
+	kr, err := keyring.New(appName, keyringBackend, keyringRootDir, bytes.NewBuffer([]byte{}), ecfg.Codec)
+	if err != nil {
+		return err
+	}
+
+	grpcConn, err := grpc.Dial(
+		grpcEndpoint,
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		return err
+	}
+	defer grpcConn.Close()
+
+	signer, fromAddr, err := newSigner(ecfg, kr, grpcConn, secondaryChainID)
+	if err != nil {
+		return err
+	}
+
+	err = buildAndSendTx(signer, fromAddr, grpcConn, true, secondaryChainID, tx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func newSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, secondaryChainID string) (*builder.KeyringSigner, sdk.AccAddress, error) {
 	chainID := chainID
@@ -55,7 +89,7 @@ func newSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, 
 	return signer, fromAddr, nil
 }
 
-func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn *grpc.ClientConn, isSecondary bool, secondaryChainID string) error {
+func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn *grpc.ClientConn, isSecondary bool, secondaryChainID string, txData []byte) error {
 	feeCoin := sdk.Coin{
 		Denom:  consts.BondDenom,
 		Amount: sdk.NewInt(1000000),
@@ -70,7 +104,7 @@ func buildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn
 
 	var msg sdk.Msg
 	if isSecondary {
-		msg = metrotx.NewSequencerMsg([]byte(secondaryChainID), []byte("hello"), fromAddr)
+		msg = metrotx.NewSequencerMsg([]byte(secondaryChainID), txData, fromAddr)
 	} else {
 		msg = banktypes.NewMsgSend(fromAddr, testfactory.RandomAddress().(types.AccAddress), types.NewCoins(types.NewInt64Coin(consts.BondDenom, 1)))
 	}
@@ -118,7 +152,7 @@ func main() {
 	}
 
 	grpcConn, err := grpc.Dial(
-		grpcEndpoint,
+		DefaultGRPCEndpoint,
 		grpc.WithInsecure(),
 	)
 	if err != nil {
@@ -138,7 +172,7 @@ func main() {
 			panic(err)
 		}
 
-		err = buildAndSendTx(signer, fromAddr, grpcConn, id != "", id)
+		err = buildAndSendTx(signer, fromAddr, grpcConn, id != "", id, []byte("hello"))
 		if err != nil {
 			panic(err)
 		}
