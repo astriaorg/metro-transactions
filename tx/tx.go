@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -31,13 +32,11 @@ const (
 	DefaultGRPCEndpoint = "127.0.0.1:9090"
 )
 
+var EncodingCfg = encoding.MakeConfig(app.ModuleEncodingRegisters...)
+
+// BuildAndSendSecondaryTransaction builds and sends a secondary transaction to Metro with the given chain ID and transaction bytes.
 func BuildAndSendSecondaryTransaction(grpcEndpoint, secondaryChainID string, tx []byte) error {
-	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-
-	config := types.GetConfig()
-	config.SetBech32PrefixForAccount(app.Bech32PrefixAccAddr, app.Bech32PrefixAccPub)
-
-	kr, err := keyring.New(appName, keyringBackend, keyringRootDir, bytes.NewBuffer([]byte{}), ecfg.Codec)
+	kr, err := NewKeyring(EncodingCfg.Codec)
 	if err != nil {
 		return err
 	}
@@ -51,7 +50,7 @@ func BuildAndSendSecondaryTransaction(grpcEndpoint, secondaryChainID string, tx 
 	}
 	defer grpcConn.Close()
 
-	signer, fromAddr, err := NewSigner(ecfg, kr, grpcConn, secondaryChainID)
+	signer, fromAddr, err := NewSigner(EncodingCfg, kr, grpcConn, secondaryChainID)
 	if err != nil {
 		return err
 	}
@@ -64,6 +63,22 @@ func BuildAndSendSecondaryTransaction(grpcEndpoint, secondaryChainID string, tx 
 	return nil
 }
 
+// NewKeyring returns a new keyring with the given codec, using the default Metro app name, keyring backend, and root directory.
+func NewKeyring(cdc codec.Codec) (keyring.Keyring, error) {
+	config := types.GetConfig()
+	config.SetBech32PrefixForAccount(app.Bech32PrefixAccAddr, app.Bech32PrefixAccPub)
+
+	kr, err := keyring.New(appName, keyringBackend, keyringRootDir, bytes.NewBuffer([]byte{}), cdc)
+	if err != nil {
+		return nil, err
+	}
+
+	return kr, nil
+}
+
+// NewSigner returns a new KeyringSigner with the given keyring, connection, and secondary chNewSignerain ID.
+// If the secondary chain ID is empty, the signer will be for the primary chain.
+// If the secondary chain ID is set, the resulting signer's chain ID will be for `primaryChainID|secondaryChainID`.
 func NewSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, secondaryChainID string) (*builder.KeyringSigner, sdk.AccAddress, error) {
 	chainID := chainID
 	if secondaryChainID != "" {
@@ -89,6 +104,9 @@ func NewSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, 
 	return signer, fromAddr, nil
 }
 
+// BuildAndSendTx builds and sends a primary or secondary transaction to Metro.
+// If isSecondary is true, the transaction will be a secondary transaction with the given secondary chain ID and transaction bytes.
+// Otherwise, it will be a primary transaction and the secondaryChainID and txData arguments will be ignored.
 func BuildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn *grpc.ClientConn, isSecondary bool, secondaryChainID string, txData []byte) error {
 	feeCoin := sdk.Coin{
 		Denom:  consts.BondDenom,
@@ -131,11 +149,10 @@ func BuildAndSendTx(signer *builder.KeyringSigner, fromAddr sdk.AccAddress, conn
 		return err
 	}
 
-	fmt.Println("exit code:", grpcRes.TxResponse.Code)
 	if grpcRes.TxResponse.Code == 0 {
-		fmt.Println("tx submitted successfully 🤨")
+		fmt.Println("metro-transactions: tx submitted successfully 😌")
 		return nil
 	}
 
-	return fmt.Errorf("tx submission failed: response: %s", grpcRes.TxResponse)
+	return fmt.Errorf("metro-transactions: tx submission failed 🤨: response: %s", grpcRes.TxResponse)
 }

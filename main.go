@@ -1,31 +1,13 @@
 package main
 
 import (
-	"bytes"
-
 	"google.golang.org/grpc"
-
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/histolabs/metro/app"
-	"github.com/histolabs/metro/app/encoding"
 
 	"github.com/astriaorg/metro-transactions/tx"
 )
 
-const (
-	appName        = "metro"
-	keyringBackend = "test"
-	keyringRootDir = "~/.metro"
-)
-
 func main() {
-	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-
-	config := types.GetConfig()
-	config.SetBech32PrefixForAccount(app.Bech32PrefixAccAddr, app.Bech32PrefixAccPub)
-
-	kr, err := keyring.New(appName, keyringBackend, keyringRootDir, bytes.NewBuffer([]byte{}), ecfg.Codec)
+	kr, err := tx.NewKeyring(tx.EncodingCfg.Codec)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +28,7 @@ func main() {
 	}
 
 	for _, id := range secondaryChainIDs {
-		signer, fromAddr, err := tx.NewSigner(ecfg, kr, grpcConn, id)
+		signer, fromAddr, err := tx.NewSigner(tx.EncodingCfg, kr, grpcConn, id)
 		if err != nil {
 			panic(err)
 		}
