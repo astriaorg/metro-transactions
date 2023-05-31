@@ -3,12 +3,14 @@ package tx
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"strings"
 
 	"google.golang.org/grpc"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,7 +28,7 @@ const (
 	appName        = "metro"
 	keyringBackend = "test"
 	keyringRootDir = "~/.metro"
-	keyName        = "validator"
+	defaultKeyName = "validator"
 	chainID        = "private"
 
 	DefaultGRPCEndpoint = "127.0.0.1:9090"
@@ -85,12 +87,27 @@ func NewSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, 
 		chainID = strings.Join([]string{chainID, secondaryChainID}, consts.ChainIDSeparator)
 	}
 
-	signer := builder.NewKeyringSigner(ecfg, kr, keyName, chainID)
-	err := signer.UpdateAccount(context.Background(), conn)
+	// generate new account
+	buf := make([]byte, 8)
+	rand.Read(buf)
+	keyName := fmt.Sprintf("key-%x", buf)
+	record, _, err := kr.NewMnemonic(keyName, keyring.English, hd.CreateHDPath(118, 0, 0).String(), keyring.DefaultBIP39Passphrase, hd.Secp256k1)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	fmt.Println("generated new account:", record.Name)
+
+	list, err := kr.List()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, r := range list {
+		fmt.Println(r.Name)
+	}
+
+	signer := builder.NewKeyringSigner(ecfg, kr, keyName, chainID)
 	info, err := signer.Key(keyName)
 	if err != nil {
 		return nil, nil, err
