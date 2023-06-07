@@ -74,8 +74,8 @@ github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kd
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJA=
 github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+3JqfkOG4=
-github.com/astriaorg/cosmos-sdk v0.0.0-20230607143235-929efdded487 h1:TFKpb6yKViNqY9O6Fo4A1XhmjlxY5FmIaXbz2sQX0PA=
-github.com/astriaorg/cosmos-sdk v0.0.0-20230607143235-929efdded487/go.mod h1:2Oq+pYLgUOdcv++AXR77Nv/Yiw4dckswSQN1iyScUqk=
+github.com/astriaorg/cosmos-sdk v0.0.0-20230607143928-694756d0eb0a h1:YVM7zhwioq4PL1xWZ55SW3i22ZAs+VUwURl8cJ6uJMI=
+github.com/astriaorg/cosmos-sdk v0.0.0-20230607143928-694756d0eb0a/go.mod h1:2Oq+pYLgUOdcv++AXR77Nv/Yiw4dckswSQN1iyScUqk=
 github.com/astriaorg/metro v0.0.5-0.20230607143502-6f0d8721e589 h1:6ABV3u8sdPT0d1nBzqqXV2BkkhWZ9q4Y0tny5LLfTAo=
 github.com/astriaorg/metro v0.0.5-0.20230607143502-6f0d8721e589/go.mod h1:4XqDEsJ3pko5afZy9arg2T5PQr2wx5oJqATUrqFFzp4=
 github.com/aws/aws-sdk-go v1.15.78/go.mod h1:E3/ieXAlvM0XWO57iftYVDLLvQ824smPP3ATZkfNZeM=

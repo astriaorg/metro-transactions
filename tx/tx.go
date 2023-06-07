@@ -96,17 +96,7 @@ func NewSigner(ecfg encoding.Config, kr keyring.Keyring, conn *grpc.ClientConn, 
 		return nil, nil, err
 	}
 
-	fmt.Println("generated new account:", record.Name)
-
-	list, err := kr.List()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for _, r := range list {
-		fmt.Println(r.Name)
-	}
-
+	fmt.Println("etro-transactions: generated new account:", record.Name)
 	signer := builder.NewKeyringSigner(ecfg, kr, keyName, chainID)
 	info, err := signer.Key(keyName)
 	if err != nil {
