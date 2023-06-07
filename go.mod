@@ -3,9 +3,9 @@ module github.com/astriaorg/metro-transactions
 go 1.19
 
 replace (
-	github.com/cosmos/cosmos-sdk => github.com/astriaorg/cosmos-sdk v0.0.0-20230531100755-d028485dcf8a
+	github.com/cosmos/cosmos-sdk => github.com/astriaorg/cosmos-sdk v0.0.0-20230607143235-929efdded487
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/histolabs/metro => github.com/astriaorg/metro v0.0.4-0.20230531100937-920e2422ad5e
+	github.com/histolabs/metro => github.com/astriaorg/metro v0.0.5-0.20230607143502-6f0d8721e589
 	github.com/tendermint/tendermint => github.com/histolabs/tendermint v0.0.0-20221227204023-ec49dd7d580f
 )
 
